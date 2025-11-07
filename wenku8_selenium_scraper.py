@@ -67,6 +67,7 @@ def scrape_all(start_url, start_page=None, end_page=None):
     with open(output_filename, "w", encoding="utf-8") as f, open(
         log_filename, "a", encoding="utf-8"
     ) as log:
+        f.writelines(f"《{novel_title}》")
         log.write(f"\n--- 開始抓取 {datetime.datetime.now()} ---\n")
         log.write(f"起始網址: {start_url}\n\n")
 
@@ -93,21 +94,22 @@ def scrape_all(start_url, start_page=None, end_page=None):
         while True:
             current_url = driver.current_url
             elapsed = time.time() - start_time
-            print(f"📄 第 {page_count} 頁: {current_url} | 經過時間 {int(elapsed)} 秒")
+            chapter_name = driver.title.split("-")[0]
+            print(f"📄【{chapter_name}】{current_url} | 經過時間 {int(elapsed)} 秒")
 
             try:
                 content_div = driver.find_element(By.ID, "content")
                 text = content_div.text.strip()
                 if text:
-                    f.write(f"\n\n=== 第 {page_count} 頁 ===\n\n")
-                    f.write(text + "\n")
+                    f.write(f"\n\n【{chapter_name}】\n\n")
+                    f.write(text)
                 else:
                     raise ValueError("找不到正文內容")
 
                 # 如果到達指定結束頁，停止
                 if end_page and page_count >= end_page:
-                    print(f"✅ 已達指定結束頁（第 {end_page} 頁），抓取完成。")
-                    log.write(f"✅ 已達指定結束頁（第 {end_page} 頁），抓取完成。\n")
+                    print(f"✅ 已達指定頁數（{end_page} 頁），抓取完成。")
+                    log.write(f"✅ 已達指定頁數（{end_page} 頁），抓取完成。\n")
                     break
 
                 # 嘗試下一頁
@@ -122,7 +124,7 @@ def scrape_all(start_url, start_page=None, end_page=None):
                     break
 
             except Exception as e:
-                error_msg = f"⚠️ 第 {page_count} 頁錯誤 ({type(e).__name__}): {e}"
+                error_msg = f"⚠️ {chapter_name}錯誤 ({type(e).__name__}): {e}"
                 print(error_msg)
                 log.write(f"{error_msg}\nURL: {current_url}\n\n")
                 # 嘗試下一頁
@@ -137,13 +139,13 @@ def scrape_all(start_url, start_page=None, end_page=None):
                     break
 
     driver.quit()
-    print(f"\n📄 抓取完成，內容儲存於 {output_filename}")
-    print(f"🪵 錯誤日誌儲存於 {log_filename}")
+    print(f"\n📄 小說內容： {output_filename}")
+    print(f"⛔ 錯誤日誌： {log_filename}")
 
 
 if __name__ == "__main__":
-    print("loading...")
-    parser = argparse.ArgumentParser(description="聞庫網小說爬蟲")
+    print("轻小说文库 爬蟲...")
+    parser = argparse.ArgumentParser(description="轻小说文库 爬蟲")
     parser.add_argument(
         "start_url",
         help="起始網址（例如：https://www.wenku8.net/novel/2/2654/102261.htm）",
