@@ -6,6 +6,7 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 from selenium.common.exceptions import NoSuchElementException
+from opencc import OpenCC
 import time
 import random
 import datetime
@@ -13,6 +14,7 @@ import datetime
 output_dir = "wenku8_novel"
 next_btn_text = "下一页"
 
+cc = OpenCC('s2t') # 簡體轉繁體
 
 def get_novel_title(driver):
     """抓取小說名稱作為檔名並加上時間"""
@@ -25,7 +27,7 @@ def get_novel_title(driver):
         else:
             title = "novel"
         timestamp = datetime.datetime.now().strftime("%Y%m%d_%H%M")
-        return f"{title}_{timestamp}"
+        return f"{cc.convert(title)}_{timestamp}"
     except Exception:
         return f"novel_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}"
 
@@ -33,7 +35,7 @@ def get_novel_title(driver):
 def find_content(driver, log, current_url, max_retry=3):
     """安全抓取正文內容（含 Cloudflare 重試）"""
     for attempt in range(1, max_retry + 1):
-        chapter_name = driver.title.split("-")[0].strip()
+        chapter_name = cc.convert(driver.title.split("-")[0].strip())
         try:
             # Cloudflare 偵測
             if "Access denied" in driver.title or "Cloudflare" in driver.page_source:
@@ -49,7 +51,7 @@ def find_content(driver, log, current_url, max_retry=3):
             text = content_div.text.strip()
             if not text:
                 raise ValueError("找不到正文內容")
-            return text
+            return cc.convert(text)
 
         except Exception as e:
             print(f"⚠️ 抓取失敗（第 {attempt} 次）：{e}")
@@ -112,7 +114,7 @@ def scrape_all(start_url, start_page=None, end_page=None):
             current_url = driver.current_url
 
             text = find_content(driver, log, current_url)
-            chapter_name = driver.title.split("-")[0].strip()
+            chapter_name = cc.convert(driver.title.split("-")[0].strip())
 
             if text:
                 elapsed = time.time() - start_time
